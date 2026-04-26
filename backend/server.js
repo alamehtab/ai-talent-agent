@@ -2,7 +2,9 @@ const express = require("express")
 const cors = require("cors")
 
 const app = express()
-app.use(cors())
+app.use(cors({
+  origin: "*"
+}))
 app.use(express.json())
 
 const candidates = require("./candidates.json")
@@ -32,7 +34,7 @@ function calculateMatch(candidate, jdData) {
     }
   })
 
-  const skillScore =    
+  const skillScore =
     jdData.skills.length > 0
       ? (skillMatch / jdData.skills.length) * 70
       : 0
@@ -145,6 +147,5 @@ app.post("/chat", (req, res) => {
   res.json({ reply, interestScore })
 })
 
-app.listen(5000, () => {
-  console.log("Server running on port 5000")
-})
+const PORT = process.env.PORT || 5000
+app.listen(PORT, () => console.log(`Server running on ${PORT}`))
