@@ -1,0 +1,32 @@
+[
+  {
+    "id": 1,
+    "name": "Rahul Sharma",
+    "skills": ["Node.js", "MongoDB", "React"],
+    "experience": 2
+  },
+  {
+    "id": 2,
+    "name": "Amit Verma",
+    "skills": ["Python", "Django"],
+    "experience": 3
+  },
+  {
+    "id": 3,
+    "name": "Sara Khan",
+    "skills": ["Node.js", "Express", "MongoDB"],
+    "experience": 4
+  },
+  {
+    "id": 4,
+    "name": "Avnish Arnav",
+    "skills": ["Java", "Python", "MongoDB"],
+    "experience": 4
+  },
+  {
+    "id": 5,
+    "name": "Mohan Gorai",
+    "skills": ["Javascript", "C++", "SQL"],
+    "experience": 4
+  }
+]
