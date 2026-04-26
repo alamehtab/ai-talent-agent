@@ -239,7 +239,7 @@ function ChatPanel({ candidate, idx, onClose, updateCandidate }) {
     setTyping(true)
 
     try {
-      const res = await axios.post("http://localhost:5000/chat", {
+      const res = await axios.post("https://ai-talent-agent-swzg.onrender.com/chat", {
         candidateId: candidate.id,
         message: text,
       })
@@ -480,7 +480,7 @@ export default function App() {
     setSelectedCandidate(null)
 
     try {
-      const res = await axios.post("http://localhost:5000/match", { jd })
+      const res = await axios.post("https://ai-talent-agent-swzg.onrender.com/match", { jd })
       setCandidates(res?.data?.candidates || [])
       setParsedJD(res?.data?.parsedJD || null)
     } catch (err) {
