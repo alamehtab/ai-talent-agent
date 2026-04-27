@@ -1,56 +1,79 @@
 const express = require("express")
 const cors = require("cors")
+const OpenAI = require("openai")
 
 const app = express()
+
 app.use(cors({
   origin: [
     "http://localhost:5173",
     "https://ai-talent-agent-bmgfn4ua8-mehtab-alams-projects-b6c495d4.vercel.app"
   ]
 }))
+
 app.use(express.json())
+
+const openai = new OpenAI({
+  apiKey: "secret_key"
+})
 
 const candidates = require("./candidates.json")
 
-function parseJD(jd) {
-  const skills = []
+// 🔥 AI JD PARSER
+async function parseJDWithAI(jd) {
+  try {
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content: "Extract structured data from job descriptions."
+        },
+        {
+          role: "user",
+          content: `
+Extract skills and experience from this JD:
 
-  const lower = jd.toLowerCase()
+"${jd}"
 
-  if (lower.includes("node")) skills.push("Node.js")
-  if (lower.includes("mongo")) skills.push("MongoDB")
-  if (lower.includes("react")) skills.push("React")
-  if (lower.includes("python")) skills.push("Python")
+Return ONLY JSON in this format:
+{
+  "skills": ["React", "Node.js"],
+  "experience": number
+}
+`
+        }
+      ],
+      temperature: 0
+    })
 
-  return {
-    skills,
-    experience: jd.includes("2") ? 2 : 1,
+    const text = completion.choices[0].message.content
+
+    return JSON.parse(text)
+  } catch (err) {
+    console.error("AI parsing failed, fallback used")
+
+    // fallback (your old logic)
+    const lower = jd.toLowerCase()
+    const skills = []
+
+    if (lower.includes("node")) skills.push("Node.js")
+    if (lower.includes("mongo")) skills.push("MongoDB")
+    if (lower.includes("react")) skills.push("React")
+    if (lower.includes("python")) skills.push("Python")
+
+    return {
+      skills,
+      experience: jd.includes("2") ? 2 : 1
+    }
   }
 }
 
-function calculateMatch(candidate, jdData) {
-  let skillMatch = 0
-
-  jdData.skills.forEach((skill) => {
-    if (candidate.skills.includes(skill)) {
-      skillMatch++
-    }
-  })
-
-  const skillScore =
-    jdData.skills.length > 0
-      ? (skillMatch / jdData.skills.length) * 70
-      : 0
-
-  const expScore = candidate.experience >= jdData.experience ? 30 : 10
-
-  return Math.round(skillScore + expScore)
-}
-
-app.post("/match", (req, res) => {
+// 🔥 MATCH API
+app.post("/match", async (req, res) => {
   const { jd } = req.body
 
-  const jdData = parseJD(jd)
+  const jdData = await parseJDWithAI(jd)
 
   const results = candidates.map((c) => {
     let skillMatch = 0
@@ -100,54 +123,51 @@ app.post("/match", (req, res) => {
   })
 })
 
-app.post("/chat", (req, res) => {
-  const { message } = req.body
-  const msg = message.toLowerCase()
+// 🔥 AI CHAT
+app.post("/chat", async (req, res) => {
+  const { message, candidateId } = req.body
 
-  let reply = ""
-  let interestScore = 50
+  try {
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content: `
+You are a job candidate chatting with a recruiter.
 
-  if (msg.includes("open") || msg.includes("availability")) {
-    const rand = Math.random()
+- Respond naturally like a human
+- Keep answers short
+- Sometimes show interest, sometimes not
+- Be realistic
+`
+        },
+        {
+          role: "user",
+          content: message
+        }
+      ]
+    })
 
-    if (rand > 0.6) {
-      reply = "Yes, I am open to new opportunities."
-      interestScore = 85
-    } else if (rand > 0.3) {
-      reply = "Not actively looking, but open to good roles."
-      interestScore = 65
-    } else {
-      reply = "Currently not looking to switch."
-      interestScore = 30
-    }
+    const reply = completion.choices[0].message.content
+
+    // simple AI-like interest scoring
+    let interestScore = 50
+
+    if (reply.toLowerCase().includes("yes")) interestScore = 85
+    else if (reply.toLowerCase().includes("maybe")) interestScore = 60
+    else if (reply.toLowerCase().includes("not")) interestScore = 25
+
+    res.json({ reply, interestScore })
+
+  } catch (err) {
+    console.error("AI chat failed:", err)
+
+    res.json({
+      reply: "Sorry, something went wrong.",
+      interestScore: 50
+    })
   }
-
-  else if (msg.includes("interested")) {
-    const rand = Math.random()
-
-    if (rand > 0.6) {
-      reply = "Yes, I am interested in this role."
-      interestScore = 90
-    } else if (rand > 0.3) {
-      reply = "Maybe, can you share more details?"
-      interestScore = 60
-    } else {
-      reply = "Not interested currently."
-      interestScore = 20
-    }
-  }
-
-  else if (msg.includes("call")) {
-    reply = "Sure, we can schedule a call."
-    interestScore = 80
-  }
-
-  else {
-    reply = "Can you tell me more about the role?"
-    interestScore = 50
-  }
-
-  res.json({ reply, interestScore })
 })
 
 const PORT = process.env.PORT || 5000
