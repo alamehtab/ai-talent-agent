@@ -3,7 +3,10 @@ const cors = require("cors")
 
 const app = express()
 app.use(cors({
-  origin: "https://ai-talent-agent-nine.vercel.app/"
+  origin: [
+    "http://localhost:5173",
+    "https://ai-talent-agent-bmgfn4ua8-mehtab-alams-projects-b6c495d4.vercel.app"
+  ]
 }))
 app.use(express.json())
 
