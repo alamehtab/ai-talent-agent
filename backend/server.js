@@ -49,7 +49,7 @@ Return ONLY JSON in this format:
 
     const text = completion.choices[0].message.content
 
-    return JSON.parse(text)
+    return JSON.parse(text.replace(/```json|```/g, "").trim())
   } catch (err) {
     console.error("AI parsing failed, fallback used")
 
